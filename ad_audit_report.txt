@@ -1,0 +1,10 @@
+
+Name       Count
+----       -----
+Finance        5
+HR             3
+IT            10
+Management     3
+Operations     5
+Sales          5
+
