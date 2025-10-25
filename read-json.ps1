@@ -112,7 +112,7 @@ $summary = @(
 )
 $summary | Add-Content "ad_audit_report.txt"
 
-# inactive users (>30 days)
+# inactive users (no login >30 days)
 $inactiveUsers = $data.users | Where-Object {
     (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days -gt 30
 }
@@ -128,6 +128,23 @@ $inactiveUsers | ForEach-Object {
     $_.samAccountName, $_.displayName, $_.department, $_.lastLogon,
     (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days
 } | Add-Content "ad_audit_report.txt"
+Add-Content "ad_audit_report.txt" "", ""
+
+# top 10 inactive computers (longest since last logon)
+$oldestBlock = @(
+    "TOP 10 INACTIVE COMPUTERS (Longest since last logon)"
+    ("-" * 55)
+    ("{0,-20} {1,-25} {2,-22}" -f "ComputerName", "OperatingSystem", "Last Logon")   
+)
+$oldestBlock | Add-Content "ad_audit_report.txt"
+
+$data.computers |
+Sort-Object { [datetime]$_.lastLogon } |
+Select-Object -First 10 samAccountname, operatingSystem, lastLogon |
+ForEach-Object {
+    "{0,-20} {1,-25} {2,-22}" -f $_.samAccountName, $_.operatingSystem, $_.lastLogon
+} | Add-Content "ad_audit_report.txt"
+
 Add-Content "ad_audit_report.txt" "", ""
 
 # users per department
