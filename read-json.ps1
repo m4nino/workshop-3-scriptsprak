@@ -40,51 +40,6 @@ $oldPasswordsDisabled = $data.users | Where-Object {
 $oldPwdCountEnabled = $oldPasswordsEnabled.Count
 $oldPwdCountDisabled = $oldPasswordsDisabled.Count
 
-$inactiveUsersEnabled = $data.users | Where-Object {
-    $_.enabled -eq $true -and
-    (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days -gt 30    
-}
-$inactiveUsersDisabled = $data.users | Where-Object {
-    $_.enabled -eq $false -and
-    (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days -gt 30
-}
-$inactiveUserCountEnabled = $inactiveUsersEnabled.Count
-$inactiveUserCountDisabled = $inactiveUsersDisabled.Count
-
-$totalComputers = $data.computers.Count
-$activeComputers = ($data.computers | Where-Object {
-        (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days -lt 7
-    }).Count
-
-$staleComputers = ($data.computers | Where-Object {
-        (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days -ge 7 -and
-        (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days -le 30
-    }).Count
-
-$inactiveComputers = ($data.computers | Where-Object {
-        (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days -gt 30
-    }).count
-
-$oldOSComputersEnabled = $data.computers | Where-Object {
-    $_.enabled -eq $true -and (
-        $_.operatingSystem -like "windows 10*" -or $_.operatingSystem -like "windows server 2019*"
-    )
-}
-$oldOSComputersDisabled = $data.computers | Where-Object {
-    $_.enabled -eq $false -and (
-        $_.operatingSystem -like "windows 10*" -or $_.operatingSystem -like "windows server 2019*"
-    )
-}
-$oldOSCountEnabled = $oldOSComputersEnabled.count
-$oldOSCountDisabled = $oldOSComputersDisabled.count
-
-$modernClients = $data.computers | Where-Object {
-    $_.operatingSystem -like "windows 11*" -and $_.enabled -eq $true
-}
-$modernClientCount = $modernClients.Count
-$modernPercent = [math]::Round(($modernClientCount / $totalClients) * 100, 1)
-
-
 # header
 $header = @(
     ("=" * 80)
@@ -103,10 +58,8 @@ $summary = @(
     "EXECUTIVE SUMMARY"
     ("-" * 20)
     "⚠ CRITICAL: $expiringCount user accounts expiring within 30 days"
-    "⚠ WARNING: $oldPwdCountEnabled user accounts with outdated or non-expiring passwords [+${oldPwdCountDisabled} disabled]"
-    "⚠ SECURITY: $inactiveUserCountEnabled inactive user accounts (>30 days) [+${inactiveUserCountDisabled} disabled]"
-    "⚠ SECURITY: $inactiveComputers inactive computers (>30 days), $staleComputers stale (7-30 days), and $oldOSCountEnabled computers on older OS [+${oldOSCountDisabled} disabled]" 
-    "✓ STATUS: $modernPercent% of computers are running windows 11 23H2, domain controllers on Windows Server 2022 "
+    "⚠ SECURITY: $inactiveComputers inactive computers (>30 days)"
+    "⚠ WARNING: $oldPwdCountEnabled user accounts with passwords older than 90 days [+$oldPwdCountDisabled disabled]"
     ""
     ""
 )
@@ -120,6 +73,7 @@ $inactiveBlock = @(
     "INACTIVE USERS (No login >30 days)"
     ("-" * 35)
     ("{0,-19} {1,-23} {2,-18} {3,-24} {4,-22}" -f "Username", "Name", "Department", "Last Login", "Days Inactive")
+    ""
 )
 $inactiveBlock | Add-Content "ad_audit_report.txt"
 
@@ -135,14 +89,15 @@ $oldestBlock = @(
     "TOP 10 INACTIVE COMPUTERS (Longest since last logon)"
     ("-" * 55)
     ("{0,-20} {1,-25} {2,-22}" -f "ComputerName", "OperatingSystem", "Last Logon")   
+    ""
 )
 $oldestBlock | Add-Content "ad_audit_report.txt"
 
 $data.computers |
 Sort-Object { [datetime]$_.lastLogon } |
-Select-Object -First 10 samAccountname, operatingSystem, lastLogon |
+Select-Object -First 10 Name, operatingSystem, lastLogon |
 ForEach-Object {
-    "{0,-20} {1,-25} {2,-22}" -f $_.samAccountName, $_.operatingSystem, $_.lastLogon
+    "{0,-20} {1,-25} {2,-22}" -f $_.Name, $_.operatingSystem, $_.lastLogon
 } | Add-Content "ad_audit_report.txt"
 
 Add-Content "ad_audit_report.txt" "", ""
