@@ -1,7 +1,7 @@
 ================================================================================
 |                         ACTIVE DIRECTORY AUDIT REPORT                        |
 ================================================================================
-Generated: 2025-10-25 15:20:33
+Generated: 2025-10-25 21:09:21
 Domain: techcorp.local
 Export Date: 2025-10-14 06:00:00
 
@@ -35,6 +35,15 @@ IT              10 users
 Management      3 users
 Operations      5 users
 Sales           5 users
+
+
+COMPUTERS PER SITE
+-------------------
+Datacenter           4 computers
+Huvudkontor          8 computers
+Kontor Malmö         3 computers
+Lager                3 computers
+Säkerhetskopia       2 computers
 
 
 COMPUTER STATUS

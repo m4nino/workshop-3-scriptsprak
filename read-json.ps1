@@ -141,6 +141,21 @@ $data.users | Group-Object department | ForEach-Object {
 } | Add-Content "ad_audit_report.txt"
 Add-Content "ad_audit_report.txt" "", ""
 
+# computers per site
+$siteBlock = @(
+    "COMPUTERS PER SITE"
+    ("-" * 19)
+)
+$siteBlock | Add-Content ".\ad_audit_report.txt"
+
+$data.computers | Group-Object site | ForEach-Object {
+    "{0,-20} {1} computers" -f 
+    $_.Name,
+    $_.Count
+} | Add-Content "ad_audit_report.txt"
+
+Add-Content "ad_audit_report.txt" "", ""
+
 # computer status
 $compStatus = @(
     "COMPUTER STATUS"
