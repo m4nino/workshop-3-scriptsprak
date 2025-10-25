@@ -1,7 +1,7 @@
 ================================================================================
 |                         ACTIVE DIRECTORY AUDIT REPORT                        |
 ================================================================================
-Generated: 2025-10-25 12:55:24
+Generated: 2025-10-25 15:20:33
 Domain: techcorp.local
 Export Date: 2025-10-14 06:00:00
 
@@ -11,38 +11,48 @@ EXECUTIVE SUMMARY
 ⚠ CRITICAL: 2 user accounts expiring within 30 days
 ⚠ WARNING: 12 user accounts with outdated or non-expiring passwords [+2 disabled]
 ⚠ SECURITY: 5 inactive user accounts (>30 days) [+2 disabled]
-⚠ SECURITY: 4 inactive computers (>30 days) [+1 disabled] and 5 computers on older OS [+1 disabled]
+⚠ SECURITY: 5 inactive computers (>30 days), 15 stale (7-30 days), and 5 computers on older OS [+1 disabled]
 ✓ STATUS: 55% of computers are running windows 11 23H2, domain controllers on Windows Server 2022 
 
 
-USER ACCOUNT STATUS
--------------------
-Total Users: 31
-Active Users: 29 (94 %)
-Disabled Accounts: 2
-
-
 INACTIVE USERS (No login >30 days)
-------------------------------
+-----------------------------------
 Username            Name                    Department         Last Login               Days Inactive         
-
 nnils               Nils Nilsson            Operations         2025-08-15 09:00:00      71                    
 qquentin            Quentin Quentinsson     Sales              2025-09-01 10:00:00      54                    
 eolsson             Erik Olsson             Sales              2025-08-15 09:00:00      71                    
-mberg               Maria Berg              Finance            2025-08-20 14:30:00      65                    
+mberg               Maria Berg              Finance            2025-08-20 14:30:00      66                    
 jsvensson           Johan Svensson          Operations         2025-08-25 08:15:00      61                    
 admin_backup        Backup Admin Account    IT                 2025-07-01 02:00:00      116                   
 test_user           Test User               IT                 2025-06-15 10:00:00      132                   
 
 
-Name       Count
-----       -----
-Finance        5
-HR             3
-IT            10
-Management     3
-Operations     5
-Sales          5
+USERS PER DEPARTMENT
+--------------------
+Finance         5 users
+HR              3 users
+IT              10 users
+Management      3 users
+Operations      5 users
+Sales           5 users
+
+
+COMPUTER STATUS
+----------------
+Total Computers: 20
+Active (<7 days): 0
+Stale (7-30 days): 15
+Inactive (>30 days): 5
+
+
+COMPUTERS BY OPERATING SYSTEM
+------------------------------
+Windows 10 Enterprise     1   (5%) ⚠ Needs upgrade
+Windows 10 Pro            4   (20%) ⚠ Needs upgrade
+Windows 11 Enterprise     1   (5%)
+Windows 11 Pro            10  (50%)
+Windows Server 2019       1   (5%) ⚠ Needs upgrade
+Windows Server 2022       3   (15%)
 
 
 ================================================================================
