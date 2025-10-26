@@ -77,7 +77,7 @@ $header | Out-File "ad_audit_report.txt" -Encoding UTF8
 # executive summary
 $summary = @(
     "EXECUTIVE SUMMARY"
-    ("-" * 20)
+    ("-" * 17)
     "⚠ CRITICAL: $expiringCount user accounts expiring within 30 days"
     "⚠ SECURITY: $inactiveComputers inactive computers (>30 days)"
     "⚠ WARNING: $oldPwdCountEnabled user accounts with passwords older than 90 days [+$oldPwdCountDisabled disabled]"
@@ -94,7 +94,7 @@ $inactiveUsers = $data.users | Where-Object {
 $inactiveBlock = @(
     "INACTIVE USERS (No login >30 days)"
     ("-" * 35)
-    ("{0,-19} {1,-23} {2,-18} {3,-24} {4,-22}" -f "Username", "Name", "Department", "Last Login", "Days Inactive")
+    ("{0,-15} {1,-22} {2,-14} {3,-23} {4,-22}" -f "Username", "Name", "Department", "Last Login", "Days Inactive")
     ""
 )
 $inactiveBlock | Add-Content "ad_audit_report.txt"
@@ -107,7 +107,7 @@ $inactiveUsers | ForEach-Object {
     else { 
         "N/A" 
     }
-    "{0,-19} {1,-23} {2,-18} {3,-24} {4,-22}" -f `
+    "{0,-15} {1,-22} {2,-14} {3,-23} {4,-22}" -f `
         $_.samAccountName, $_.displayName, $_.department, $_.lastLogon, $daysInactive
 } | Add-Content "ad_audit_report.txt"
 Add-Content "ad_audit_report.txt" "", ""
@@ -115,7 +115,7 @@ Add-Content "ad_audit_report.txt" "", ""
 # top 10 inactive computers (longest since last logon)
 $oldestBlock = @(
     "TOP 10 INACTIVE COMPUTERS (Longest since last logon)"
-    ("-" * 55)
+    ("-" * 53)
     ("{0,-20} {1,-25} {2,-22}" -f "ComputerName", "OperatingSystem", "Last Logon")   
     ""
 )
