@@ -1,4 +1,19 @@
 # function
+
+function Try-ParseDate {
+    param ([string]$dateString)
+    try {
+        if ([string]::IsNullOrWhiteSpace($dateString)) {
+            return $null
+        }
+        return [datetime]$dateString
+    }
+    catch {
+        Write-Verbose "Invalid date found: $dateString"
+        return $null
+    }
+}
+
 function Get-InactiveAccounts {
     param([int]$Days = 30)
 
@@ -6,10 +21,15 @@ function Get-InactiveAccounts {
     $cutoff = (Get-Date).AddDays(-$Days)
 
     $inactiveUsers = $data.users | Where-Object {
-        [datetime]$_.lastLogon -lt $cutoff
+        $lastLogon = Try-ParseDate $_.lastLogon
+        $lastLogon -and $lastLogon -lt $cutoff
     } | Select-Object samAccountName, displayName, department, lastLogon,
-    @{Name = "DaysInactive"; Expression = { (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days } }
-    
+    @{Name = "DaysInactive"; Expression = {
+            $ll = Try-ParseDate $_.lastLogon
+            if ($ll) { (New-TimeSpan -Start $ll -End (Get-Date)).Days } else { $null }
+        }
+    }
+
     return $inactiveUsers
 }
 
@@ -21,20 +41,21 @@ $data = Get-Content -Path "ad_export.json" -Raw -Encoding UTF8 | ConvertFrom-Jso
 # pre-calc all metrics before report
 
 $expiringAccounts = $data.users | Where-Object {
-    [datetime]$_.accountExpires -lt (Get-Date).AddDays(30) -and $_.enabled -eq $true
+    $expDate = Try-ParseDate $_.accountExpires
+    $expDate -and $expDate -lt (Get-Date).AddDays(30) -and $_.enabled -eq $true
 }
 $expiringCount = $expiringAccounts.Count
 
 $oldPasswordsEnabled = $data.users | Where-Object {
     $_.enabled -eq $true -and (
         ($_.passwordNeverExpires -eq $true) -or
-        ((New-TimeSpan -Start ([datetime]$_.passwordLastSet) -End (Get-Date)).Days -gt 90)
+        ((New-TimeSpan -Start (Try-ParseDate $_.passwordLastSet) -End (Get-Date)).Days -gt 90)
     )
 }
 $oldPasswordsDisabled = $data.users | Where-Object {
     $_.enabled -eq $false -and (
         $_.passwordNeverExpires -eq $true -or
-        ((New-TimeSpan -Start ([datetime]$_.passwordLastSet) -End (Get-Date)).Days -gt 90)    
+        ((New-TimeSpan -Start (Try-ParseDate $_.passwordLastSet) -End (Get-Date)).Days -gt 90)    
     )
 }
 $oldPwdCountEnabled = $oldPasswordsEnabled.Count
@@ -67,7 +88,8 @@ $summary | Add-Content "ad_audit_report.txt"
 
 # inactive users (no login >30 days)
 $inactiveUsers = $data.users | Where-Object {
-    (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days -gt 30
+    $ll = Try-ParseDate $_.lastLogon
+    $ll -and (New-TimeSpan -Start $ll -End (Get-Date)).Days -gt 30
 }
 $inactiveBlock = @(
     "INACTIVE USERS (No login >30 days)"
@@ -78,9 +100,15 @@ $inactiveBlock = @(
 $inactiveBlock | Add-Content "ad_audit_report.txt"
 
 $inactiveUsers | ForEach-Object {
-    "{0,-19} {1,-23} {2,-18} {3,-24} {4,-22}" -f
-    $_.samAccountName, $_.displayName, $_.department, $_.lastLogon,
-    (New-TimeSpan -Start ([datetime]$_.lastLogon) -End (Get-Date)).Days
+    $ll = Try-ParseDate $_.lastLogon
+    $daysInactive = if ($ll) {
+        (New-TimeSpan -Start $ll -End (Get-Date)).Days 
+    }
+    else { 
+        "N/A" 
+    }
+    "{0,-19} {1,-23} {2,-18} {3,-24} {4,-22}" -f `
+        $_.samAccountName, $_.displayName, $_.department, $_.lastLogon, $daysInactive
 } | Add-Content "ad_audit_report.txt"
 Add-Content "ad_audit_report.txt" "", ""
 
@@ -94,7 +122,7 @@ $oldestBlock = @(
 $oldestBlock | Add-Content "ad_audit_report.txt"
 
 $data.computers |
-Sort-Object { [datetime]$_.lastLogon } |
+Sort-Object { Try-ParseDate $_.lastLogon } |
 Select-Object -First 10 Name, operatingSystem, lastLogon |
 ForEach-Object {
     "{0,-20} {1,-25} {2,-22}" -f $_.Name, $_.operatingSystem, $_.lastLogon
@@ -162,11 +190,23 @@ $osLines += $data.computers | Group-Object operatingSystem | ForEach-Object {
 $osLines += ""
 $osLines | Add-Content "ad_audit_report.txt"
 
-
 # inactive users for 30+ days (inactive_users.csv) - function
 $inactiveUsers = Get-InactiveAccounts -Days 30
 $inactiveUsers | Export-Csv -Path "inactive_users.csv" -NoTypeInformation -Encoding UTF8
 
+# computer status (computer_status.csv)
+$data.computers |
+Group-Object site | ForEach-Object {
+    [PSCustomObject]@{
+        Site               = $_.Name
+        TotalComputers     = $_.Count
+        ActiveComputers    = ($_.Group | Where-Object { $ll = Try-ParseDate $_.lastLogon; $ll -and (New-TimeSpan -Start $ll -End (Get-Date)).Days -le 30 }).Count
+        InactiveComputers  = ($_.Group | Where-Object { $ll = Try-ParseDate $_.lastLogon; $ll -and (New-TimeSpan -Start $ll -End (Get-Date)).Days -gt 30 }).Count
+        Windows10Count     = ($_.Group | Where-Object { $_.OperatingSystem -like "Windows 10*" }).Count
+        Windows11Count     = ($_.Group | Where-Object { $_.OperatingSystem -like "Windows 11*" }).Count
+        WindowsServerCount = ($_.Group | Where-Object { $_.OperatingSystem -like "Windows Server*" }).Count
+    }
+} | Export-Csv -Path "computer_status.csv" -NoTypeInformation -Encoding UTF8
 
 # end of report
 $footer = @(
