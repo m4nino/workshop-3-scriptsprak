@@ -208,6 +208,19 @@ Group-Object site | ForEach-Object {
     }
 } | Export-Csv -Path "computer_status.csv" -NoTypeInformation -Encoding UTF8
 
+# password age per user (password_age.csv)
+$data.users | ForEach-Object {
+    $pls = Try-ParseDate $_.passwordLastSet
+    [PSCustomObject]@{
+        samAccountName  = $_.samAccountName
+        displayName     = $_.displayName
+        department      = $_.department
+        passwordLastSet = $_.passwordLastSet
+        passwordAgeDays = if ($pls) { (New-TimeSpan -Start $pls -End (Get-Date)).Days } else { $null }
+    }
+} | Sort-Object PasswordAgeDays -Descending |
+Export-Csv -Path "password_age.csv" -NoTypeInformation -Encoding UTF8
+
 # end of report
 $footer = @(
     ""
