@@ -1,7 +1,7 @@
 ================================================================================
 |                         ACTIVE DIRECTORY AUDIT REPORT                        |
 ================================================================================
-Generated: 2025-10-26 14:23:10
+Generated: 2025-10-28 13:24:29
 Domain: techcorp.local
 Export Date: 2025-10-14 06:00:00
 
@@ -9,7 +9,7 @@ Export Date: 2025-10-14 06:00:00
 EXECUTIVE SUMMARY
 -----------------
 ⚠ CRITICAL: 2 user accounts expiring within 30 days
-⚠ SECURITY: 5 inactive computers (>30 days)
+⚠ SECURITY:  inactive computers (>30 days)
 ⚠ WARNING: 12 user accounts with passwords older than 90 days [+2 disabled]
 
 
@@ -17,13 +17,13 @@ INACTIVE USERS (No login >30 days)
 -----------------------------------
 Username        Name                   Department     Last Login              Days Inactive         
 
-nnils           Nils Nilsson           Operations     2025-08-15 09:00:00     72                    
-qquentin        Quentin Quentinsson    Sales          2025-09-01 10:00:00     55                    
-eolsson         Erik Olsson            Sales          2025-08-15 09:00:00     72                    
-mberg           Maria Berg             Finance        2025-08-20 14:30:00     66                    
-jsvensson       Johan Svensson         Operations     2025-08-25 08:15:00     62                    
-admin_backup    Backup Admin Account   IT             2025-07-01 02:00:00     117                   
-test_user       Test User              IT             2025-06-15 10:00:00     133                   
+nnils           Nils Nilsson           Operations     2025-08-15 09:00:00     74                    
+qquentin        Quentin Quentinsson    Sales          2025-09-01 10:00:00     57                    
+eolsson         Erik Olsson            Sales          2025-08-15 09:00:00     74                    
+mberg           Maria Berg             Finance        2025-08-20 14:30:00     68                    
+jsvensson       Johan Svensson         Operations     2025-08-25 08:15:00     64                    
+admin_backup    Backup Admin Account   IT             2025-07-01 02:00:00     119                   
+test_user       Test User              IT             2025-06-15 10:00:00     135                   
 
 
 TOP 10 INACTIVE COMPUTERS (Longest since last logon)
@@ -61,22 +61,14 @@ Lager                3 computers
 Säkerhetskopia       2 computers
 
 
-COMPUTER STATUS
-----------------
-Total Computers: 19
-Active (<7 days): 0
-Stale (7-30 days): 15
-Inactive (>30 days): 5
-
-
 COMPUTERS BY OPERATING SYSTEM
 ------------------------------
 Windows 10 Enterprise     1   (5%) ⚠ Needs upgrade
-Windows 10 Pro            4   (21%) ⚠ Needs upgrade
+Windows 10 Pro            4   (20%) ⚠ Needs upgrade
 Windows 11 Enterprise     1   (5%)
-Windows 11 Pro            10  (53%)
+Windows 11 Pro            10  (50%)
 Windows Server 2019       1   (5%) ⚠ Needs upgrade
-Windows Server 2022       3   (16%)
+Windows Server 2022       3   (15%)
 
 
 ================================================================================

@@ -1,14 +1,17 @@
 # function
-
-function Try-ParseDate {
+function Test-ParseDate {
     param ([string]$dateString)
-    try {
-        if ([string]::IsNullOrWhiteSpace($dateString)) {
-            return $null
-        }
-        return [datetime]$dateString
+
+    if ([string]::IsNullOrWhiteSpace($dateString)) {
+        return $null
     }
-    catch {
+
+    $parsed = [datetime]::MinValue
+
+    if ([datetime]::TryParse($dateString, [ref]$parsed)) {
+        return $parsed
+    }
+    else {
         Write-Verbose "Invalid date found: $dateString"
         return $null
     }
@@ -21,11 +24,11 @@ function Get-InactiveAccounts {
     $cutoff = (Get-Date).AddDays(-$Days)
 
     $inactiveUsers = $data.users | Where-Object {
-        $lastLogon = Try-ParseDate $_.lastLogon
+        $lastLogon = Test-ParseDate $_.lastLogon
         $lastLogon -and $lastLogon -lt $cutoff
     } | Select-Object samAccountName, displayName, department, lastLogon,
     @{Name = "DaysInactive"; Expression = {
-            $ll = Try-ParseDate $_.lastLogon
+            $ll = Test-ParseDate $_.lastLogon
             if ($ll) { (New-TimeSpan -Start $ll -End (Get-Date)).Days } else { $null }
         }
     }
@@ -41,7 +44,7 @@ $data = Get-Content -Path "ad_export.json" -Raw -Encoding UTF8 | ConvertFrom-Jso
 # pre-calc all metrics before report
 
 $expiringAccounts = $data.users | Where-Object {
-    $expDate = Try-ParseDate $_.accountExpires
+    $expDate = Test-ParseDate $_.accountExpires
     $expDate -and $expDate -lt (Get-Date).AddDays(30) -and $_.enabled -eq $true
 }
 $expiringCount = $expiringAccounts.Count
@@ -49,13 +52,13 @@ $expiringCount = $expiringAccounts.Count
 $oldPasswordsEnabled = $data.users | Where-Object {
     $_.enabled -eq $true -and (
         ($_.passwordNeverExpires -eq $true) -or
-        ((New-TimeSpan -Start (Try-ParseDate $_.passwordLastSet) -End (Get-Date)).Days -gt 90)
+        ((New-TimeSpan -Start (Test-ParseDate $_.passwordLastSet) -End (Get-Date)).Days -gt 90)
     )
 }
 $oldPasswordsDisabled = $data.users | Where-Object {
     $_.enabled -eq $false -and (
         $_.passwordNeverExpires -eq $true -or
-        ((New-TimeSpan -Start (Try-ParseDate $_.passwordLastSet) -End (Get-Date)).Days -gt 90)    
+        ((New-TimeSpan -Start (Test-ParseDate $_.passwordLastSet) -End (Get-Date)).Days -gt 90)    
     )
 }
 $oldPwdCountEnabled = $oldPasswordsEnabled.Count
@@ -88,7 +91,7 @@ $summary | Add-Content "ad_audit_report.txt"
 
 # inactive users (no login >30 days)
 $inactiveUsers = $data.users | Where-Object {
-    $ll = Try-ParseDate $_.lastLogon
+    $ll = Test-ParseDate $_.lastLogon
     $ll -and (New-TimeSpan -Start $ll -End (Get-Date)).Days -gt 30
 }
 $inactiveBlock = @(
@@ -100,7 +103,7 @@ $inactiveBlock = @(
 $inactiveBlock | Add-Content "ad_audit_report.txt"
 
 $inactiveUsers | ForEach-Object {
-    $ll = Try-ParseDate $_.lastLogon
+    $ll = Test-ParseDate $_.lastLogon
     $daysInactive = if ($ll) {
         (New-TimeSpan -Start $ll -End (Get-Date)).Days 
     }
@@ -122,7 +125,7 @@ $oldestBlock = @(
 $oldestBlock | Add-Content "ad_audit_report.txt"
 
 $data.computers |
-Sort-Object { Try-ParseDate $_.lastLogon } |
+Sort-Object { Test-ParseDate $_.lastLogon } |
 Select-Object -First 10 Name, operatingSystem, lastLogon |
 ForEach-Object {
     "{0,-20} {1,-25} {2,-22}" -f $_.Name, $_.operatingSystem, $_.lastLogon
@@ -156,27 +159,17 @@ $data.computers | Group-Object site | ForEach-Object {
 
 Add-Content "ad_audit_report.txt" "", ""
 
-# computer status
-$compStatus = @(
-    "COMPUTER STATUS"
-    ("-" * 16)
-    ("Total Computers: {0}" -f $totalComputers)
-    ("Active (<7 days): {0}" -f $activeComputers)
-    ("Stale (7-30 days): {0}" -f $staleComputers)
-    ("Inactive (>30 days): {0}" -f $inactiveComputers)
-    ""
-    ""
-)
-$compStatus | Add-Content "ad_audit_report.txt"
-
 # computers by OS
 $osLines = @(
     "COMPUTERS BY OPERATING SYSTEM"
     ("-" * 30)
 )
-
+$totalComputers = $data.computers.Count
 $osLines += $data.computers | Group-Object operatingSystem | ForEach-Object {
-    $percent = [math]::Round(($_.Count / $totalComputers) * 100, 0)
+    $percent = if ($totalComputers -ne 0) { 
+        [math]::Round(($_.Count / $totalComputers) * 100, 0)
+    }
+    else { 0 }
     $line = "{0,-25} {1,-3} ({2}%)" -f
     $_.Name, 
     $_.Count,
@@ -200,8 +193,8 @@ Group-Object site | ForEach-Object {
     [PSCustomObject]@{
         Site               = $_.Name
         TotalComputers     = $_.Count
-        ActiveComputers    = ($_.Group | Where-Object { $ll = Try-ParseDate $_.lastLogon; $ll -and (New-TimeSpan -Start $ll -End (Get-Date)).Days -le 30 }).Count
-        InactiveComputers  = ($_.Group | Where-Object { $ll = Try-ParseDate $_.lastLogon; $ll -and (New-TimeSpan -Start $ll -End (Get-Date)).Days -gt 30 }).Count
+        ActiveComputers    = ($_.Group | Where-Object { $ll = Test-ParseDate $_.lastLogon; $ll -and (New-TimeSpan -Start $ll -End (Get-Date)).Days -le 30 }).Count
+        InactiveComputers  = ($_.Group | Where-Object { $ll = Test-ParseDate $_.lastLogon; $ll -and (New-TimeSpan -Start $ll -End (Get-Date)).Days -gt 30 }).Count
         Windows10Count     = ($_.Group | Where-Object { $_.OperatingSystem -like "Windows 10*" }).Count
         Windows11Count     = ($_.Group | Where-Object { $_.OperatingSystem -like "Windows 11*" }).Count
         WindowsServerCount = ($_.Group | Where-Object { $_.OperatingSystem -like "Windows Server*" }).Count
@@ -210,7 +203,7 @@ Group-Object site | ForEach-Object {
 
 # password age per user (password_age.csv)
 $data.users | ForEach-Object {
-    $pls = Try-ParseDate $_.passwordLastSet
+    $pls = Test-ParseDate $_.passwordLastSet
     [PSCustomObject]@{
         samAccountName  = $_.samAccountName
         displayName     = $_.displayName
